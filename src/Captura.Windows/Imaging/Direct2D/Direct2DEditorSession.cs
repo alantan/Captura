@@ -12,6 +12,8 @@ using Device = SharpDX.Direct3D11.Device;
 using Factory = SharpDX.DirectWrite.Factory;
 using Factory1 = SharpDX.Direct2D1.Factory1;
 using PixelFormat = SharpDX.Direct2D1.PixelFormat;
+using SharpDX;
+using Captura.Base;
 
 namespace Captura.Windows.DirectX
 {
@@ -126,7 +128,14 @@ namespace Captura.Windows.DirectX
 
         public void EndDraw()
         {
-            RenderTarget.EndDraw();
+            try
+            {
+                RenderTarget.EndDraw();
+            }
+            catch (SharpDXException ex) when ((uint)ex.HResult == 0x8899000C)
+            {
+                throw new RenderTargetCorruptedException(ex);
+            }
             Device.ImmediateContext.CopyResource(DesktopTexture, StagingTexture);
 
             if (_previewWindow.IsVisible)

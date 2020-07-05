@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Captura.Audio;
+using Captura.Base;
 using Captura.Models;
 
 // ReSharper disable MethodSupportsCancellation
@@ -137,11 +138,21 @@ namespace Captura.Video
             }
         }
 
-        bool FrameWriter(TimeSpan Timestamp)
+        bool FrameWriter(TimeSpan Timestamp, int retryAttempt = 0)
         {
             var editableFrame = _imageProvider.Capture();
 
-            var frame = editableFrame.GenerateFrame(Timestamp);
+            IBitmapFrame frame;
+
+            try
+            {
+                frame = editableFrame.GenerateFrame(Timestamp);
+            }
+            catch (RenderTargetCorruptedException) when (retryAttempt < 20)
+            {
+                editableFrame.Dispose();
+                return FrameWriter(Timestamp, retryAttempt++);
+            }
 
             var success = AddFrame(frame);
 
